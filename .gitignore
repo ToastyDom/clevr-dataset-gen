@@ -2,4 +2,12 @@
 __pycache__/
 *.swp
 *.pyc
-output/
+# Rendered output is not tracked, except the files that define the datasets
+output/*
+!output/CLEVR_SINGLE_OBJECT/
+!output/CLEVR_DUAL_OBJECT/
+output/CLEVR_*/*
+!output/CLEVR_*/settings.json
+!output/CLEVR_*/placements.json
+!output/CLEVR_*/grid_placements.json
+!output/CLEVR_*/layout.json

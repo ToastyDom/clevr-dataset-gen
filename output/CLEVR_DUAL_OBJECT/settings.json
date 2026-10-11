@@ -1,0 +1,32 @@
+{
+  "name": "CLEVR_DUAL_OBJECT",
+  "dataset": "dual",
+  "layout": {
+    "grid_size": 3,
+    "grid_step": 2,
+    "shapes": [
+      "sphere",
+      "cube",
+      "cylinder"
+    ],
+    "min_gap_px": 4.0,
+    "min_world_gap": 0.1
+  },
+  "render": {
+    "colors": [
+      "red",
+      "blue"
+    ],
+    "cast_shadows": 1,
+    "render_num_samples": 512,
+    "denoise": 1,
+    "use_gpu": 1,
+    "skip_existing": 1,
+    "preview_tiles": 12
+  },
+  "paths": {
+    "single_placements_json": "grid_placements.json",
+    "layout_json": "layout.json",
+    "output_dir": "generation"
+  }
+}

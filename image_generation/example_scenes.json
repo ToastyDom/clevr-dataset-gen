@@ -1,0 +1,19 @@
+{
+  "scenes": [
+    {
+      "objects": [
+        {"shape": "sphere", "color": "red",   "material": "metal",  "size": "large", "x": -1.3, "y": -1.5},
+        {"shape": "sphere", "color": "green", "material": "rubber", "size": "large", "x":  0.0, "y":  0.0},
+        {"shape": "sphere", "color": "blue",  "material": "metal",  "size": "large", "x":  1.3, "y":  1.5}
+      ]
+    },
+    {
+      "objects": [
+        {"shape": "cube", "color": "yellow", "material": "rubber", "size": "large", "x": 0, "y": 0, "rotation": 45},
+        {"shape": "sphere", "color": [255, 128, 0], "color_name": "orange", "size": "small"},
+        {"shape": "cylinder"},
+        {}
+      ]
+    }
+  ]
+}

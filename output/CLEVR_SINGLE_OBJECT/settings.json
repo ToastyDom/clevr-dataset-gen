@@ -1,0 +1,58 @@
+{
+  "name": "CLEVR_SINGLE_OBJECT",
+  "dataset": "single",
+  "layout": {
+    "image_size": 336,
+    "patch_size": 14,
+    "grid_size": 6,
+    "grid_spacing_patches": 3,
+    "size": "small",
+    "shapes": [
+      "sphere",
+      "cube",
+      "cylinder"
+    ],
+    "camera_distance": 200.0,
+    "min_margin_px": 14.0,
+    "look_at": [
+      0.0,
+      0.0
+    ],
+    "sphere_diameters_px": [
+      50.0,
+      51.0,
+      52.0,
+      53.0,
+      54.0,
+      55.0,
+      56.0,
+      57.0,
+      58.0,
+      59.0,
+      60.0
+    ],
+    "fragment_threshold": 0.1,
+    "max_ground_tilt_px": 0.5
+  },
+  "render": {
+    "colors": [
+      "gray",
+      "red",
+      "blue",
+      "green",
+      "brown",
+      "purple",
+      "cyan",
+      "yellow"
+    ],
+    "cast_shadows": 1,
+    "render_num_samples": 512,
+    "denoise": 1,
+    "use_gpu": 1,
+    "skip_existing": 1
+  },
+  "paths": {
+    "placements_json": "placements.json",
+    "output_dir": "generation"
+  }
+}

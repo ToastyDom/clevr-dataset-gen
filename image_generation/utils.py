@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree. An additional grant
 # of patent rights can be found in the PATENTS file in the same directory.
 
-import sys, random, os
+import sys, random, os, math
 import bpy, bpy_extras
 
 
@@ -33,13 +33,9 @@ def parse_args(parser, argv=None):
   return parser.parse_args(extract_args(argv))
 
 
-# I wonder if there's a better way to do this?
 def delete_object(obj):
   """ Delete a specified blender object """
-  for o in bpy.data.objects:
-    o.select = False
-  obj.select = True
-  bpy.ops.object.delete()
+  bpy.data.objects.remove(obj, do_unlink=True)
 
 
 def get_camera_coords(cam, pos):
@@ -65,15 +61,6 @@ def get_camera_coords(cam, pos):
   return (px, py, z)
 
 
-def set_layer(obj, layer_idx):
-  """ Move an object to a particular layer """
-  # Set the target layer to True first because an object must always be on
-  # at least one layer.
-  obj.layers[layer_idx] = True
-  for i in range(len(obj.layers)):
-    obj.layers[i] = (i == layer_idx)
-
-
 def add_object(object_dir, name, scale, loc, theta=0):
   """
   Load an object from a file. We assume that in the directory object_dir, there
@@ -83,6 +70,9 @@ def add_object(object_dir, name, scale, loc, theta=0):
   - scale: scalar giving the size that the object should be in the scene
   - loc: tuple (x, y) giving the coordinates on the ground plane where the
     object should be placed.
+  - theta: rotation around the vertical axis, in degrees
+
+  Returns the new blender object.
   """
   # First figure out how many of this object are already in the scene so we can
   # give the new object a unique name
@@ -91,19 +81,21 @@ def add_object(object_dir, name, scale, loc, theta=0):
     if obj.name.startswith(name):
       count += 1
 
-  filename = os.path.join(object_dir, '%s.blend' % name, 'Object', name)
-  bpy.ops.wm.append(filename=filename)
+  filepath = os.path.join(object_dir, '%s.blend' % name)
+  with bpy.data.libraries.load(filepath) as (data_from, data_to):
+    data_to.objects = [name]
+  obj = data_to.objects[0]
+  bpy.context.scene.collection.objects.link(obj)
+  obj.name = '%s_%d' % (name, count)
 
-  # Give it a new name to avoid conflicts
-  new_name = '%s_%d' % (name, count)
-  bpy.data.objects[name].name = new_name
-
-  # Set the new object as active, then rotate, scale, and translate it
+  # Rotate, scale, and translate it
   x, y = loc
-  bpy.context.scene.objects.active = bpy.data.objects[new_name]
-  bpy.context.object.rotation_euler[2] = theta
-  bpy.ops.transform.resize(value=(scale, scale, scale))
-  bpy.ops.transform.translate(value=(x, y, scale))
+  obj.rotation_euler[2] = math.radians(theta)
+  obj.scale = [s * scale for s in obj.scale]
+  obj.location = (x, y, scale)
+  bpy.context.view_layer.objects.active = obj
+  bpy.context.view_layer.update()
+  return obj
 
 
 def load_materials(material_dir):
@@ -115,47 +107,30 @@ def load_materials(material_dir):
   for fn in os.listdir(material_dir):
     if not fn.endswith('.blend'): continue
     name = os.path.splitext(fn)[0]
-    filepath = os.path.join(material_dir, fn, 'NodeTree', name)
-    bpy.ops.wm.append(filename=filepath)
+    filepath = os.path.join(material_dir, fn)
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+      data_to.node_groups = [name]
 
 
-def add_material(name, **properties):
+def add_material(obj, name, **properties):
   """
-  Create a new material and assign it to the active object. "name" should be the
+  Create a new material and assign it to obj. "name" should be the
   name of a material that has been previously loaded using load_materials.
   """
-  # Figure out how many materials are already in the scene
-  mat_count = len(bpy.data.materials)
+  mat = bpy.data.materials.new('Material_%d' % len(bpy.data.materials))
+  nodes = mat.node_tree.nodes
 
-  # Create a new material; it is not attached to anything and
-  # it will be called "Material"
-  bpy.ops.material.new()
-
-  # Get a reference to the material we just created and rename it;
-  # then the next time we make a new material it will still be called
-  # "Material" and we will still be able to look it up by name
-  mat = bpy.data.materials['Material']
-  mat.name = 'Material_%d' % mat_count
-
-  # Attach the new material to the active object
   # Make sure it doesn't already have materials
-  obj = bpy.context.active_object
   assert len(obj.data.materials) == 0
   obj.data.materials.append(mat)
 
-  # Find the output node of the new material
-  output_node = None
-  for n in mat.node_tree.nodes:
-    if n.name == 'Material Output':
-      output_node = n
-      break
-
-  # Add a new GroupNode to the node tree of the active material,
-  # and copy the node tree from the preloaded node group to the
-  # new group node. This copying seems to happen by-value, so
-  # we can create multiple materials of the same type without them
-  # clobbering each other
-  group_node = mat.node_tree.nodes.new('ShaderNodeGroup')
+  # Replace the default Principled BSDF with a group node that uses the
+  # preloaded node group
+  output_node = nodes['Material Output']
+  for n in list(nodes):
+    if n != output_node:
+      nodes.remove(n)
+  group_node = nodes.new('ShaderNodeGroup')
   group_node.node_tree = bpy.data.node_groups[name]
 
   # Find and set the "Color" input of the new group node
@@ -169,4 +144,3 @@ def add_material(name, **properties):
       group_node.outputs['Shader'],
       output_node.inputs['Surface'],
   )
-

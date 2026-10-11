@@ -53,31 +53,38 @@ All code was developed and tested on OSX and Ubuntu 16.04.
 ## Step 1: Generating Images
 First we render synthetic images using [Blender](https://www.blender.org/), outputting both rendered images as well as a JSON file containing ground-truth scene information for each image.
 
-Blender ships with its own installation of Python which is used to execute scripts that interact with Blender; you'll need to add the `image_generation` directory to Python path of Blender's bundled Python. The easiest way to do this is by adding a `.pth` file to the `site-packages` directory of Blender's Python, like this:
-
-```bash
-echo $PWD/image_generation >> $BLENDER/$VERSION/python/lib/python3.5/site-packages/clevr.pth
-```
-
-where `$BLENDER` is the directory where Blender is installed and `$VERSION` is your Blender version; for example on OSX you might run:
-
-```bash
-echo $PWD/image_generation >> /Applications/blender/blender.app/Contents/Resources/2.78/python/lib/python3.5/site-packages/clevr.pth
-```
-
-You can then render some images like this:
+The scripts have been updated to work with current Blender (tested with 5.2); no `.pth` file or other changes to Blender's bundled Python are needed. You can render some random images like this:
 
 ```bash
 cd image_generation
 blender --background --python render_images.py -- --num_images 10
 ```
 
-On OSX the `blender` binary is located inside the blender.app directory; for convenience you may want to
-add the following alias to your `~/.bash_profile` file:
+On OSX the `blender` binary is located inside the Blender.app directory; for convenience you may want to
+add the following alias to your `~/.zshrc` file:
 
 ```bash
-alias blender='/Applications/blender/blender.app/Contents/MacOS/blender'
+alias blender='/Applications/Blender.app/Contents/MacOS/Blender'
 ```
+
+### Rendering specific scenes
+Instead of fully random scenes you can describe the scenes you want in a JSON file and pass it with `--scene_spec`.
+Each object may give `shape` (cube, sphere, cylinder), `color` (a name from `data/properties.json` or `[r, g, b]` in 0-255),
+`material` (rubber, metal), `size` (large, small), `x` and `y` (ground-plane coordinates, roughly -3 to 3) and `rotation` (degrees).
+Any field that is left out is chosen randomly. See [`image_generation/example_scenes.json`](image_generation/example_scenes.json):
+
+```bash
+blender --background --python render_images.py -- --scene_spec example_scenes.json --camera_jitter 0
+```
+
+### Controlled datasets for VLM analysis
+Two controlled datasets for analysing LLaVA-1.5, with objects aligned to its 14 px patch grid:
+
+- `CLEVR_SINGLE_OBJECT`: one object per image, 36 positions x 3 shapes x 8 colors = 864 images at 336x336
+- `CLEVR_DUAL_OBJECT`: two objects per image, 9 positions, 3 shapes, red/blue = 1,296 images (2,592 A/B assignments)
+
+Each dataset is made in two steps from a settings file (`output/<name>/settings.json`): a *layout* step (settings that move objects: image and patch size, grid, object size, shapes; computes the placements JSON) and a *render* step (colors, shadows, quality; renders and checks), followed by an export in the CLEVR format to `output/<name>/`. **Start with [`tutorial_generate_datasets.ipynb`](tutorial_generate_datasets.ipynb)**: it replicates the existing datasets and shows how to make a new one. All commands are also in the [single-object README](image_generation/data/vlm_single_object/README.md#generating).
+[`visualize_patch_grid.ipynb`](visualize_patch_grid.ipynb) shows how the objects fall into the patch grid.
 
 If you have an NVIDIA GPU with CUDA installed then you can use the GPU to accelerate rendering like this:
 
